@@ -11,6 +11,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
 import android.os.UpdateEngine
+import androidx.preference.PreferenceManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.SharedFlow
@@ -19,12 +20,19 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import org.lineageos.updater.data.UserPreferencesRepository
+import org.lineageos.updater.misc.Constants
 
 class BatteryMonitor(
     private val appContext: Context,
     coroutineScope: CoroutineScope,
     userPreferencesRepository: UserPreferencesRepository,
 ) {
+    private fun isUpdateInstalling(): Boolean =
+        PreferenceManager.getDefaultSharedPreferences(appContext)
+            .getString("installing_ab_id", null) != null ||
+                PreferenceManager.getDefaultSharedPreferences(appContext)
+                    .getString(Constants.PREF_NEEDS_REBOOT_ID, null) != null
+
     data class BatteryState(
         val level: Int,
         val isAcCharging: Boolean,
@@ -56,7 +64,10 @@ class BatteryMonitor(
     private val abPerfMode = userPreferencesRepository.abPerfModeFlow
         .onEach {
             try {
-                updateEngine?.setPerformanceMode(currentBatteryState.isAcCharging || it)
+                updateEngine?.setPerformanceMode(
+                    isUpdateInstalling() ||
+                            currentBatteryState.isAcCharging || it,
+                )
             } catch (_: Throwable) {
                 // Ignored
             }
@@ -73,11 +84,14 @@ class BatteryMonitor(
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
                 val state = fromIntent(intent)
-                // On AC, maximize background updates; otherwise respect the user preference.
+                // Keep installation at maximum performance even when the app is backgrounded.
                 // Guard on isAcCharging change to avoid redundant IPC on every battery level tick.
                 if (state.isAcCharging != previousState.isAcCharging) {
                     try {
-                        updateEngine?.setPerformanceMode(state.isAcCharging || abPerfMode.value)
+                        updateEngine?.setPerformanceMode(
+                            isUpdateInstalling() ||
+                                    state.isAcCharging || abPerfMode.value,
+                        )
                     } catch (_: Throwable) {
                         // Ignored
                     }

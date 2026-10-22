@@ -141,9 +141,8 @@ class ABUpdateInstaller {
     }
 
     private boolean shouldEnablePerformanceMode(boolean userPreferenceEnabled) {
-        return ((UpdaterApplication) mContext).getBatteryMonitor()
-                .getCurrentBatteryState().isAcCharging()
-                || userPreferenceEnabled;
+        return isInstallingUpdate(mContext) || ((UpdaterApplication) mContext).getBatteryMonitor()
+                .getCurrentBatteryState().isAcCharging() || userPreferenceEnabled;
     }
 
     private void applyPerformanceMode(boolean userPreferenceEnabled) {

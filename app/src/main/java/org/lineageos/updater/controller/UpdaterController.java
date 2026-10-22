@@ -19,6 +19,7 @@ import org.lineageos.updater.data.source.local.UpdatesLocalDataSource;
 import org.lineageos.updater.data.source.local.UpdatesDatabase;
 import org.lineageos.updater.download.DownloadClient;
 import org.lineageos.updater.misc.Utils;
+import org.lineageos.updater.util.InstallUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -52,6 +53,7 @@ public class UpdaterController {
 
     private int mActiveDownloads = 0;
     private final Set<String> mVerifyingUpdates = new HashSet<>();
+    private final Set<String> mAutoInstallUpdates = ConcurrentHashMap.newKeySet();
 
     public static synchronized UpdaterController getInstance(Context context) {
         if (sUpdaterController == null) {
@@ -181,6 +183,11 @@ public class UpdaterController {
                 Log.d(TAG, "Download complete");
                 DownloadEntry entry = mDownloads.get(downloadId);
                 if (entry != null) {
+                    if (!InstallUtils.canStreamUpdate(entry.mUpdate,
+                            ((UpdaterApplication) mContext).getUserPreferencesRepository()
+                                    .getStreamUpdatesBlocking())) {
+                        mAutoInstallUpdates.add(downloadId);
+                    }
                     synchronized (entry) {
                         entry.mUpdate = entry.mUpdate.withStatus(UpdateStatus.VERIFYING);
                     }
@@ -277,6 +284,10 @@ public class UpdaterController {
                 }
                 mVerifyingUpdates.remove(downloadId);
                 notifyUpdateChange(downloadId);
+                if (mAutoInstallUpdates.remove(downloadId) &&
+                        entry != null && entry.mUpdate.getStatus() == UpdateStatus.VERIFIED) {
+                    Utils.triggerUpdate(mContext, downloadId);
+                }
             }
         }).start();
     }
