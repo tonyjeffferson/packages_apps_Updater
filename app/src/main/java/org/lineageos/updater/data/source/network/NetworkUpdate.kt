@@ -31,6 +31,8 @@ data class NetworkUpdate(
     @SerialName("sha256") val sha256: String,
     @SerialName("size") val size: Long,
     @SerialName("version") val version: String,
+    @SerialName("pre-build") val preBuild: String? = null,
+    @SerialName("pre-build-incremental") val preBuildIncremental: String? = null,
     @SerialName("md5") val md5: String? = null,
     @SerialName("buildtype") val buildType: String? = null,
     // Lunaris additional metadata

@@ -5,6 +5,7 @@
 
 package org.lineageos.updater.data
 
+import android.os.Build
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -14,6 +15,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerializationException
 import org.lineageos.updater.data.source.local.UpdatesLocalDataSource
+import org.lineageos.updater.data.source.network.NetworkUpdate
 import org.lineageos.updater.data.source.network.UpdatesNetworkDataSource
 import org.lineageos.updater.data.source.network.toUpdate
 import org.lineageos.updater.deviceinfo.DeviceInfoUtils
@@ -69,10 +71,8 @@ class UpdatesRepository(
         )
 
         val networkUpdates = networkUpdatesRaw
-            .map { it.toUpdate() }
             .filter { filterUpdates(it) }
-
-        if (networkUpdates.isEmpty()) return System.currentTimeMillis()
+            .map { it.toUpdate() }
 
         val networkIds = networkUpdates.map { it.downloadId }.toSet()
 
@@ -110,17 +110,29 @@ class UpdatesRepository(
         return System.currentTimeMillis()
     }
 
-    private fun filterUpdates(update: Update): Boolean {
+    private fun filterUpdates(update: NetworkUpdate): Boolean {
         val isCurrentBuild = update.timestamp == DeviceInfoUtils.buildDateTimestamp
         val isOlderBuild = update.timestamp < DeviceInfoUtils.buildDateTimestamp
 
         if (!DeviceInfoUtils.isDowngradingAllowed && (isOlderBuild || isCurrentBuild)) {
-            Log.d(TAG, "${update.name} is not newer than the current build")
+            Log.d(TAG, "${update.filename} is not newer than the current build")
             return false
         }
 
-        if (update.osSdkLevel < DeviceInfoUtils.sdkLevel) {
-            Log.d(TAG, "${update.name} is older than current Android version")
+        if ((update.osSdkLevel ?: 0) < DeviceInfoUtils.sdkLevel) {
+            Log.d(TAG, "${update.filename} is older than current Android version")
+            return false
+        }
+
+        if (!update.preBuild.isNullOrBlank() && update.preBuild != Build.FINGERPRINT) {
+            Log.d(TAG, "${update.filename} requires source build ${update.preBuild}")
+            return false
+        }
+
+        if (!update.preBuildIncremental.isNullOrBlank() &&
+            update.preBuildIncremental != Build.VERSION.INCREMENTAL
+        ) {
+            Log.d(TAG, "${update.filename} requires source build ${update.preBuildIncremental}")
             return false
         }
         return true
