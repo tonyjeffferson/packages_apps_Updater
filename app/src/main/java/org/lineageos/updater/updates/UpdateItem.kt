@@ -226,27 +226,29 @@ fun UpdateItem(
                                         ),
                                     )
                                 }
-                                Surface(
-                                    shape = MaterialTheme.shapes.medium,
-                                    color = colors.secondaryContainer,
-                                ) {
-                                    Row(
-                                        Modifier.padding(16.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                if (state.installNote != 0) {
+                                    Surface(
+                                        shape = MaterialTheme.shapes.medium,
+                                        color = colors.secondaryContainer,
                                     ) {
-                                        Icon(Icons.Rounded.Info, null, Modifier.size(20.dp))
-                                        Text(
-                                            if (
-                                                state.installNote ==
-                                                    R.string.list_major_upgrade_recovery_install
-                                            ) {
-                                                stringResource(
-                                                    state.installNote,
-                                                    stringResource(R.string.brand_name),
-                                                )
-                                            } else stringResource(state.installNote),
-                                            style = MaterialTheme.typography.bodyMedium,
-                                        )
+                                        Row(
+                                            Modifier.padding(16.dp),
+                                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                        ) {
+                                            Icon(Icons.Rounded.Info, null, Modifier.size(20.dp))
+                                            Text(
+                                                if (
+                                                    state.installNote ==
+                                                        R.string.list_major_upgrade_recovery_install
+                                                ) {
+                                                    stringResource(
+                                                        state.installNote,
+                                                        stringResource(R.string.brand_name),
+                                                    )
+                                                } else stringResource(state.installNote),
+                                                style = MaterialTheme.typography.bodyMedium,
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -341,12 +343,11 @@ private fun UpdateItemIdleCollapsedPreview() {
                     fileSize = "1.1 GB",
                     androidUpdateInfo = "Android 16",
                     securityUpdate = "Jan 2026",
-                    installNote = R.string.list_full_install,
+                    installNote = 0,
                     progress = null,
                     actions =
                         UpdateActions(
                             primary = UpdateAction(type = UpdateActionType.START_DOWNLOAD),
-                            overflow = listOf(UpdateAction(type = UpdateActionType.VIEW_DOWNLOADS)),
                         ),
                 ),
             expanded = false,
@@ -398,7 +399,7 @@ private fun UpdateItemDownloadingPreview() {
                     fileSize = "1.1 GB",
                     androidUpdateInfo = "Android 16",
                     securityUpdate = "Jan 2026",
-                    installNote = R.string.list_full_install,
+                    installNote = 0,
                     progress =
                         ProgressState.Determinate(
                             percent = 65f,
@@ -409,7 +410,6 @@ private fun UpdateItemDownloadingPreview() {
                         UpdateActions(
                             primary = UpdateAction(type = UpdateActionType.PAUSE_DOWNLOAD),
                             secondary = UpdateAction(type = UpdateActionType.CANCEL_DOWNLOAD),
-                            overflow = listOf(UpdateAction(type = UpdateActionType.VIEW_DOWNLOADS)),
                         ),
                 ),
             expanded = true,

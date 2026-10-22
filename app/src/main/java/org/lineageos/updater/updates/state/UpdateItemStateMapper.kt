@@ -159,9 +159,6 @@ class UpdateItemStateMapper(
                 if (state.canDelete) {
                     add(action(type = UpdateActionType.DELETE, enabled = !state.isBusy))
                 }
-                if (update.downloadUrl != null) {
-                    add(action(UpdateActionType.VIEW_DOWNLOADS))
-                }
             },
         )
 
@@ -191,7 +188,9 @@ class UpdateItemStateMapper(
             installNote = when (state.installBlockedReason) {
                 InstallUtils.BlockedReason.DOWNGRADE -> R.string.list_downgrade_blocked
                 InstallUtils.BlockedReason.VERSION_UNSUPPORTED -> R.string.list_major_upgrade_recovery_install
-                InstallUtils.BlockedReason.NONE -> R.string.list_full_install
+                // The feed does not describe a package's source-build requirements.
+                // Do not claim that an arbitrary OTA can be installed over any build.
+                InstallUtils.BlockedReason.NONE -> 0
             },
             progress = progress,
             actions = actions,
